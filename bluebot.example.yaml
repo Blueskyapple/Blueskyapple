@@ -1,0 +1,107 @@
+# BlueBot Configuration Example
+# Copy this file to bluebot.yaml and fill in your details
+
+name: BlueBot
+version: 1.0.0
+
+# Gateway settings (HTTP/WebSocket API)
+gateway:
+  host: 127.0.0.1
+  port: 18800
+  cors: true
+  auth:
+    enabled: false
+    # token: your-secret-token  # Uncomment to require authentication
+
+# AI provider configuration
+ai:
+  # Available providers: openai, anthropic, ollama, custom
+  provider: openai
+
+  # Model to use
+  # OpenAI: gpt-4o, gpt-4o-mini, gpt-4-turbo, gpt-3.5-turbo
+  # Anthropic: claude-3-opus, claude-3-sonnet, claude-3-haiku
+  # Ollama: llama3, mistral, codellama, etc.
+  model: gpt-4o-mini
+
+  # API key (or set OPENAI_API_KEY / ANTHROPIC_API_KEY env variable)
+  # apiKey: sk-your-api-key-here
+
+  # For Ollama or custom providers
+  # baseUrl: http://localhost:11434/v1
+
+  # Generation parameters
+  temperature: 0.7
+  maxTokens: 2048
+
+  # Bot personality
+  systemPrompt: |
+    You are BlueBot, a helpful personal AI assistant. You are:
+    - Friendly and conversational
+    - Helpful and informative
+    - Concise but thorough
+    - Honest about limitations
+
+    You can help with a wide range of tasks including answering questions,
+    having conversations, helping with writing, coding, analysis, and more.
+
+# Messaging channels
+channels:
+  # Discord Bot
+  - id: discord-main
+    type: discord
+    name: Discord Bot
+    enabled: false  # Set to true and add token to enable
+    config:
+      token: your-discord-bot-token
+      prefix: "!bot"
+      respondToDMs: true
+      respondToMentions: true
+      # allowedChannels:
+      #   - channel-id-1
+      #   - channel-id-2
+      # allowedUsers:
+      #   - user-id-1
+      #   - user-id-2
+
+  # Telegram Bot
+  - id: telegram-main
+    type: telegram
+    name: Telegram Bot
+    enabled: false  # Set to true and add token to enable
+    config:
+      token: your-telegram-bot-token
+      respondToGroups: true
+      # allowedUsers:
+      #   - 123456789
+      # allowedGroups:
+      #   - -1001234567890
+
+  # Slack Bot
+  - id: slack-main
+    type: slack
+    name: Slack Bot
+    enabled: false  # Set to true and add token to enable
+    config:
+      botToken: xoxb-your-slack-bot-token
+      respondToDMs: true
+      respondToMentions: true
+      # allowedChannels:
+      #   - C12345678
+      # allowedUsers:
+      #   - U12345678
+
+# Enabled skills
+skills:
+  - weather
+  - calculator
+  - reminder
+  - system-info
+  - web-search
+  - notes
+
+# Local storage configuration
+storage:
+  type: local
+  path: .bluebot
+  encryption: false
