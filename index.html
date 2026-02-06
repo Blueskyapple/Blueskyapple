@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TikTok Clone</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎵</text></svg>">
+</head>
+<body>
+    <!-- Top Navigation Bar -->
+    <header class="top-nav">
+        <button class="nav-btn" id="liveBtn">Live</button>
+        <div class="feed-tabs">
+            <button class="tab-btn" data-tab="following">Following</button>
+            <button class="tab-btn active" data-tab="foryou">For You</button>
+        </div>
+        <button class="nav-btn" id="searchBtn">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <circle cx="11" cy="11" r="7" stroke="white" stroke-width="2"/>
+                <path d="M16 16L20 20" stroke="white" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+        </button>
+    </header>
+
+    <!-- Video Feed Container -->
+    <div class="video-feed" id="videoFeed">
+        <!-- Videos will be injected by JavaScript -->
+    </div>
+
+    <!-- Video Sidebar Actions (right side) -->
+    <div class="video-sidebar" id="videoSidebar">
+        <div class="sidebar-item avatar-container">
+            <div class="avatar" id="currentAvatar">
+                <img src="" alt="avatar" id="avatarImg">
+            </div>
+            <div class="avatar-follow">+</div>
+        </div>
+        <div class="sidebar-item" id="likeBtn">
+            <div class="sidebar-icon like-icon">
+                <svg viewBox="0 0 24 24" fill="none">
+                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                </svg>
+            </div>
+            <span class="sidebar-count" id="likeCount">0</span>
+        </div>
+        <div class="sidebar-item" id="commentBtn">
+            <div class="sidebar-icon">
+                <svg viewBox="0 0 24 24" fill="none">
+                    <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2v10z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
+            <span class="sidebar-count" id="commentCount">0</span>
+        </div>
+        <div class="sidebar-item" id="bookmarkBtn">
+            <div class="sidebar-icon">
+                <svg viewBox="0 0 24 24" fill="none">
+                    <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2v16z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
+            <span class="sidebar-count" id="bookmarkCount">0</span>
+        </div>
+        <div class="sidebar-item" id="shareBtn">
+            <div class="sidebar-icon">
+                <svg viewBox="0 0 24 24" fill="none">
+                    <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <polyline points="16,6 12,2 8,6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <line x1="12" y1="2" x2="12" y2="15" stroke="white" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+            </div>
+            <span class="sidebar-count" id="shareCount">Share</span>
+        </div>
+        <div class="sidebar-item music-disc-container">
+            <div class="music-disc" id="musicDisc">
+                <div class="disc-inner"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Video Info Overlay (bottom) -->
+    <div class="video-info" id="videoInfo">
+        <div class="video-username" id="videoUsername">@username</div>
+        <div class="video-description" id="videoDescription">
+            <span class="desc-text" id="descText"></span>
+            <button class="see-more-btn" id="seeMoreBtn" style="display:none">... more</button>
+        </div>
+        <div class="video-music" id="videoMusic">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="white">
+                <path d="M9 18V5l12-2v13"/>
+                <circle cx="6" cy="18" r="3" fill="white"/>
+                <circle cx="18" cy="16" r="3" fill="white"/>
+            </svg>
+            <span class="music-name marquee" id="musicName">Original Sound</span>
+        </div>
+    </div>
+
+    <!-- Comments Panel -->
+    <div class="comments-panel" id="commentsPanel">
+        <div class="comments-header">
+            <span class="comments-title" id="commentsTotalCount">0 comments</span>
+            <button class="comments-close" id="commentsClose">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                    <path d="M18 6L6 18M6 6l12 12" stroke="white" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+            </button>
+        </div>
+        <div class="comments-list" id="commentsList">
+            <!-- Comments injected by JS -->
+        </div>
+        <div class="comments-input-container">
+            <input type="text" class="comments-input" id="commentsInput" placeholder="Add a comment...">
+            <button class="comments-send" id="commentsSend">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                    <path d="M22 2L11 13" stroke="white" stroke-width="2" stroke-linecap="round"/>
+                    <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Share Panel -->
+    <div class="share-panel" id="sharePanel">
+        <div class="share-header">
+            <span class="share-title">Share to</span>
+            <button class="share-close" id="shareClose">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                    <path d="M18 6L6 18M6 6l12 12" stroke="white" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+            </button>
+        </div>
+        <div class="share-options">
+            <div class="share-option">
+                <div class="share-icon" style="background:#25D366">
+                    <svg viewBox="0 0 24 24" fill="white" width="28" height="28"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.832-1.438A9.955 9.955 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2z"/></svg>
+                </div>
+                <span>WhatsApp</span>
+            </div>
+            <div class="share-option">
+                <div class="share-icon" style="background:#1DA1F2">
+                    <svg viewBox="0 0 24 24" fill="white" width="28" height="28"><path d="M23 3a10.9 10.9 0 01-3.14 1.53 4.48 4.48 0 00-7.86 3v1A10.66 10.66 0 013 4s-4 9 5 13a11.64 11.64 0 01-7 2c9 5 20 0 20-11.5a4.5 4.5 0 00-.08-.83A7.72 7.72 0 0023 3z"/></svg>
+                </div>
+                <span>Twitter</span>
+            </div>
+            <div class="share-option">
+                <div class="share-icon" style="background:#0088cc">
+                    <svg viewBox="0 0 24 24" fill="white" width="28" height="28"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z"/></svg>
+                </div>
+                <span>Telegram</span>
+            </div>
+            <div class="share-option">
+                <div class="share-icon" style="background:#4267B2">
+                    <svg viewBox="0 0 24 24" fill="white" width="28" height="28"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/></svg>
+                </div>
+                <span>Facebook</span>
+            </div>
+            <div class="share-option">
+                <div class="share-icon" style="background:#FF4500">
+                    <svg viewBox="0 0 24 24" fill="white" width="28" height="28"><circle cx="12" cy="12" r="10"/><path d="M16.5 13.5c0 2.5-2 4-4.5 4s-4.5-1.5-4.5-4" fill="none" stroke="#FF4500" stroke-width="1.5"/><circle cx="9" cy="11" r="1.5" fill="#FF4500"/><circle cx="15" cy="11" r="1.5" fill="#FF4500"/></svg>
+                </div>
+                <span>Reddit</span>
+            </div>
+            <div class="share-option" id="copyLinkBtn">
+                <div class="share-icon" style="background:#555">
+                    <svg viewBox="0 0 24 24" fill="none" width="28" height="28"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" stroke="white" stroke-width="2" stroke-linecap="round"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>
+                </div>
+                <span>Copy link</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Discover Page -->
+    <div class="page" id="discoverPage">
+        <div class="discover-header">
+            <h2>Discover</h2>
+            <div class="search-bar">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <circle cx="11" cy="11" r="7" stroke="#999" stroke-width="2"/>
+                    <path d="M16 16L20 20" stroke="#999" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+                <input type="text" placeholder="Search" class="search-input">
+            </div>
+        </div>
+        <div class="trending-section">
+            <div class="trending-tags">
+                <span class="trending-tag">Trending</span>
+                <span class="trending-tag">Comedy</span>
+                <span class="trending-tag">Dance</span>
+                <span class="trending-tag">Food</span>
+                <span class="trending-tag">Sports</span>
+                <span class="trending-tag">Gaming</span>
+                <span class="trending-tag">Music</span>
+                <span class="trending-tag">Pets</span>
+            </div>
+        </div>
+        <div class="discover-grid" id="discoverGrid">
+            <!-- Discover items injected by JS -->
+        </div>
+    </div>
+
+    <!-- Upload Page -->
+    <div class="page" id="uploadPage">
+        <div class="upload-container">
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-icon">
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none">
+                        <path d="M12 5v14M5 12h14" stroke="#fe2c55" stroke-width="2.5" stroke-linecap="round"/>
+                    </svg>
+                </div>
+                <h3>Upload video</h3>
+                <p>Drag and drop a file or click to browse</p>
+                <div class="upload-specs">
+                    <span>MP4 or WebM</span>
+                    <span>Up to 10 minutes</span>
+                    <span>Less than 2 GB</span>
+                </div>
+                <button class="upload-btn">Select file</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Inbox Page -->
+    <div class="page" id="inboxPage">
+        <div class="inbox-header">
+            <h2>Inbox</h2>
+        </div>
+        <div class="inbox-tabs">
+            <button class="inbox-tab active">Notifications</button>
+            <button class="inbox-tab">Messages</button>
+        </div>
+        <div class="inbox-list" id="inboxList">
+            <!-- Inbox items injected by JS -->
+        </div>
+    </div>
+
+    <!-- Profile Page -->
+    <div class="page" id="profilePage">
+        <div class="profile-header">
+            <div class="profile-top-bar">
+                <button class="profile-menu-btn">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <path d="M3 12h18M3 6h18M3 18h18" stroke="white" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                </button>
+                <span class="profile-username-title" id="profileUsernameTitle">@myusername</span>
+                <button class="profile-menu-btn">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <circle cx="5" cy="12" r="1.5" fill="white"/>
+                        <circle cx="12" cy="12" r="1.5" fill="white"/>
+                        <circle cx="19" cy="12" r="1.5" fill="white"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="profile-avatar">
+                <div class="profile-avatar-circle" id="profileAvatar">
+                    <span>M</span>
+                </div>
+            </div>
+            <div class="profile-stats">
+                <div class="stat">
+                    <span class="stat-number">128</span>
+                    <span class="stat-label">Following</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-number">14.2K</span>
+                    <span class="stat-label">Followers</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-number">293.5K</span>
+                    <span class="stat-label">Likes</span>
+                </div>
+            </div>
+            <div class="profile-bio">
+                <p>Content creator & dreamer</p>
+                <p class="profile-link">linktr.ee/myusername</p>
+            </div>
+            <div class="profile-actions">
+                <button class="profile-edit-btn">Edit profile</button>
+                <button class="profile-share-btn">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                        <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8" stroke="white" stroke-width="2" stroke-linecap="round"/>
+                        <polyline points="16,6 12,2 8,6" stroke="white" stroke-width="2" stroke-linecap="round"/>
+                        <line x1="12" y1="2" x2="12" y2="15" stroke="white" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <div class="profile-tabs">
+            <button class="profile-tab active" data-profile-tab="videos">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
+                    <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+                    <rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
+                </svg>
+            </button>
+            <button class="profile-tab" data-profile-tab="liked">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" stroke="white" stroke-width="2"/>
+                </svg>
+            </button>
+        </div>
+        <div class="profile-video-grid" id="profileVideoGrid">
+            <!-- Profile videos injected by JS -->
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast"></div>
+
+    <!-- Play/Pause Indicator -->
+    <div class="play-indicator" id="playIndicator">
+        <svg width="80" height="80" viewBox="0 0 24 24" fill="rgba(255,255,255,0.8)">
+            <polygon points="5,3 19,12 5,21"/>
+        </svg>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+        <button class="nav-item active" data-page="home">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+                <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
+            </svg>
+            <span>Home</span>
+        </button>
+        <button class="nav-item" data-page="discover">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <circle cx="11" cy="11" r="7" stroke="white" stroke-width="2"/>
+                <path d="M16 16L20 20" stroke="white" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            <span>Discover</span>
+        </button>
+        <button class="nav-item create-btn" data-page="upload">
+            <div class="create-icon">
+                <div class="create-icon-bg left"></div>
+                <div class="create-icon-bg right"></div>
+                <div class="create-icon-center">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="black">
+                        <path d="M12 5v14M5 12h14" stroke="black" stroke-width="2.5" stroke-linecap="round"/>
+                    </svg>
+                </div>
+            </div>
+        </button>
+        <button class="nav-item" data-page="inbox">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2v10z" stroke="white" stroke-width="2"/>
+            </svg>
+            <span>Inbox</span>
+            <span class="badge">3</span>
+        </button>
+        <button class="nav-item" data-page="profile">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" stroke="white" stroke-width="2"/>
+                <circle cx="12" cy="7" r="4" stroke="white" stroke-width="2"/>
+            </svg>
+            <span>Profile</span>
+        </button>
+    </nav>
+
+    <!-- Overlay for panels -->
+    <div class="overlay" id="overlay"></div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>
