@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.env
+data/memory/
+data/skills/
+*.log
+.test-*
+coverage/
+.DS_Store

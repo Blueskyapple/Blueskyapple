@@ -1,0 +1,11 @@
+{
+  "aiProvider": "anthropic",
+  "aiModel": "claude-sonnet-4-20250514",
+  "webPort": 3000,
+  "webHost": "0.0.0.0",
+  "heartbeatInterval": 15,
+  "memoryPath": "./data/memory",
+  "skillsPath": "./data/skills",
+  "sandboxMode": "restricted",
+  "logLevel": "info"
+}
