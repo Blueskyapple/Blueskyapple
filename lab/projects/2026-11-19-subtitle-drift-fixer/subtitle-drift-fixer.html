@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Subtitle Drift Fixer</title>
+<style>
+*{box-sizing:border-box}body{background:#f4f0e7;color:#282e31;font:16px/1.5 "DM Sans",system-ui,sans-serif;margin:0}
+main{max-width:48rem;margin:7vh auto;padding:1.3rem}h1{font:500 clamp(2.8rem,8vw,4.3rem)/1 Georgia,serif;letter-spacing:-.05em;margin:0}
+label{display:block;font-weight:650;margin:.85rem 0}select,input,button{font:inherit;max-width:100%}
+input,select{display:block;margin-top:.25rem;width:100%;padding:.4rem}fieldset{margin:1.1rem 0;border:1px solid #85958e;background:#fffdf8;border-radius:.4rem}legend{font-weight:bold}
+button{background:#184f49;color:white;border:none;border-radius:.35rem;padding:.65rem 1rem;cursor:pointer}
+output{display:block;margin-top:.8rem}small{color:#4c5c56}
+</style>
+<main>
+<h1>Subtitle Drift Fixer</h1>
+<p>Choose a subtitle line and enter when you hear it in the video. Use a second line near the end if the delay changes over time. Your subtitles stay on this device.</p>
+<label>UTF-8 subtitle file<input id="file" type="file" accept=".srt"></label>
+<small>Numbered SRT files up to 4 MiB and 5,000 cues.</small>
+<form hidden>
+<label>Timing correction<select id="mode"><option value="two">Gradual drift · two lines</option><option value="one">Constant delay · one line</option></select></label>
+<fieldset><legend>First match</legend><label>First subtitle line<select id="first"></select></label><label>First spoken time<input id="start" required placeholder="00:00:12.500"></label></fieldset>
+<fieldset id="secondGroup"><legend>Second match</legend><label>Later subtitle line<select id="last"></select></label><label>Later spoken time<input id="end" placeholder="00:24:30.000"></label></fieldset>
+<button>Save corrected SRT</button>
+</form>
+<output role="status"></output>
+</main>
+<script>
+const byId = id => document.getElementById(id);
+const form = document.querySelector("form");
+const statusLine = document.querySelector("output");
+let current;
+let revision = 0;
+function ms(value) {
+  const match = /^(\d{2}):([0-5]\d):([0-5]\d)[,.](\d{3})$/.exec(value.trim());
+  if (!match) throw new Error("Enter each time as HH:MM:SS.mmm, for example 00:01:12.500.");
+  return ((Number(match[1]) * 60 + Number(match[2])) * 60 + Number(match[3])) * 1000 + Number(match[4]);
+}
+function stamp(value) {
+  const pad = n => String(n).padStart(2,"0");
+  return pad(Math.floor(value/3600000)) + ":" + pad(Math.floor(value/60000)%60) + ":" +
+    pad(Math.floor(value/1000)%60) + "," + String(value%1000).padStart(3,"0");
+}
+function parse(text) {
+  const parts = text.split(/(\r\n|\r|\n)/);
+  const cues = [];
+  let i = 0;
+  while (i < parts.length) {
+    if (!parts[i].trim()) { i += 2; continue; }
+    const line = i / 2 + 1;
+    const number = parts[i].trim();
+    const time = /^(\s*)(\d{2}:\d{2}:\d{2},\d{3})([ \t]+-->[ \t]+)(\d{2}:\d{2}:\d{2},\d{3})([ \t].*|)$/.exec(parts[i+2] || "");
+    if (!/^\d+$/.test(number) || !time || !(parts[i+4] || "").trim())
+      throw new Error("Expected a numbered SRT cue with timing and text at line " + line + ".");
+    const start = ms(time[2]), end = ms(time[4]);
+    if (end <= start) throw new Error("Cue " + number + " must end after it starts.");
+    cues.push({index:i+2, start, end, time, number, label: number + " · " + time[2] + " · " + parts[i+4].slice(0,75)});
+    if (cues.length > 5000) throw new Error("Choose an SRT with up to 5,000 cues.");
+    i += 4;
+    while (i < parts.length && parts[i].trim()) {
+      if (/^\d+$/.test(parts[i].trim()) && /^\s*\d{2}:\d{2}:\d{2}[,.]\d{3}\s*-->/.test(parts[i+2] || ""))
+        throw new Error("A blank line is missing before cue " + parts[i].trim() + ".");
+      i += 2;
+    }
+  }
+  if (!cues.length) throw new Error("The file contains no subtitle cues.");
+  return {parts,cues};
+}
+function setTime(select,input) { byId(input).value = stamp(current.cues[Number(byId(select).value)].start).replace(",","."); }
+function showMode() { byId("secondGroup").hidden = byId("mode").value === "one"; }
+byId("first").onchange = () => setTime("first","start");
+byId("last").onchange = () => setTime("last","end");
+byId("mode").onchange = showMode;
+form.oninput = () => {statusLine.textContent = "";};
+byId("file").onchange = async event => {
+  const version = ++revision;
+  current = null;
+  form.hidden = true;
+  statusLine.textContent = "";
+  const file = event.target.files[0];
+  if (!file) return;
+  try {
+    if (file.size > 4*1024*1024) throw new Error("Choose an SRT of 4 MiB or less.");
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    if (version !== revision) return;
+    let text;
+    try { text = new TextDecoder("utf-8",{fatal:true}).decode(bytes); }
+    catch { throw new Error("Save the subtitles as UTF-8 SRT and try again."); }
+    current = parse(text);
+    current.bom = bytes[0]===239 && bytes[1]===187 && bytes[2]===191;
+    current.name = file.name.replace(/\.srt$/i,"") + "-synced.srt";
+    for (const id of ["first","last"]) {
+      const choices = document.createDocumentFragment();
+      current.cues.forEach((cue,i) => choices.append(new Option(cue.label,String(i))));
+      byId(id).replaceChildren(choices);
+    }
+    byId("last").selectedIndex = current.cues.length-1;
+    byId("mode").options[0].disabled = current.cues.length===1;
+    byId("mode").value = current.cues.length===1 ? "one" : "two";
+    setTime("first","start"); setTime("last","end"); showMode();
+    form.hidden = false;
+    statusLine.textContent = current.cues.length + " cues loaded.";
+  } catch (error) { if (version===revision) statusLine.textContent = error.message; }
+};
+form.onsubmit = event => {
+  event.preventDefault();
+  try {
+    const original = current.cues[Number(byId("first").value)].start;
+    const wanted = ms(byId("start").value);
+    let rate = 1;
+    if (byId("mode").value==="two") {
+      const later = current.cues[Number(byId("last").value)].start;
+      const desiredLater = ms(byId("end").value);
+      if (later <= original || desiredLater <= wanted) throw new Error("Choose two lines and spoken times in increasing order.");
+      rate = (desiredLater-wanted)/(later-original);
+    }
+    const parts = current.parts.slice();
+    const convert = t => Math.round(wanted+(t-original)*rate);
+    for (const cue of current.cues) {
+      const from = convert(cue.start), to = convert(cue.end);
+      if (from < 0 || to >= 360000000 || to <= from)
+        throw new Error("The correction puts cue " + cue.number + " outside the time range or makes it too short. Check the matches.");
+      parts[cue.index] = cue.time[1]+stamp(from)+cue.time[3]+stamp(to)+cue.time[5];
+    }
+    const url = URL.createObjectURL(new Blob([current.bom ? "\uFEFF" : "",parts.join("")],{type:"application/x-subrip"}));
+    const link = document.createElement("a");
+    link.href=url; link.download=current.name; document.body.append(link); link.click(); link.remove();
+    setTimeout(() => URL.revokeObjectURL(url),30000);
+    statusLine.textContent = "Prepared " + current.name + ". Check a line midway through the video.";
+  } catch (error) { statusLine.textContent = error.message; }
+};
+</script>
+</html>
