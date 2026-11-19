@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bookmark Copy Cleaner</title>
+<style>
+* { box-sizing: border-box }
+body { margin: 0; color: #193528; background: #f7f5ed; font: 17px/1.55 "DM Sans",system-ui,sans-serif }
+main { max-width: 43rem; margin: 8vh auto; padding: 1.5rem }
+h1 { font: 500 clamp(2.8rem,8vw,4.6rem)/1.04 "Instrument Serif",Georgia,serif; margin: 0; letter-spacing: -.045em }
+h2 { font-size: 1.15rem }
+section { margin-top: 1.6rem; padding: 1.4rem; background: #fffef9; border: 1px solid #babfb5; border-radius: .65rem }
+label { display: block; font-weight: 650; margin-bottom: .6rem }
+input,button { max-width: 100%; font: inherit }
+button { background: #20593d; color: white; border: 0; padding: .65rem 1rem; border-radius: .35rem; cursor: pointer }
+li { overflow-wrap: anywhere; margin-bottom: .3rem }
+#status:empty { display: none }
+small { color: #475d4d }
+</style>
+<main>
+<h1>Bookmark Copy Cleaner</h1>
+<p>Find repeated bookmarks in the same folder. Preview the matches, then save a cleaned copy. Everything runs on this device.</p>
+<section>
+<label for="source">Choose a bookmark HTML export</label>
+<input id="source" type="file" accept=".html,.htm,text/html">
+<p id="status" role="status"></p>
+<div id="preview" hidden><h2>Copies to remove</h2><ul></ul><button type="button">Save cleaned HTML</button></div>
+</section>
+<p><small>Supports standard UTF-8 browser bookmark exports up to 32 MiB. Import the cleaned file into an empty browser profile to check the result. Importing into an existing collection can add another copy.</small></p>
+</main>
+<script>
+const source = document.querySelector("#source");
+const statusLine = document.querySelector("#status");
+const preview = document.querySelector("#preview");
+const list = preview.querySelector("ul");
+const save = preview.querySelector("button");
+let ready;
+let request = 0;
+
+function label(text) {
+  return text.replace(/&(?:amp|lt|gt|quot|#39);/g, token =>
+    ({"&amp;":"&","&lt;":"<","&gt;":">","&quot;":'"',"&#39;":"'"}[token]));
+}
+
+function bookmarkKey(attributes, title) {
+  // Require quoted attributes and preserve metadata except the two export timestamps.
+  const pair = /\s+([\w:-]+)\s*=\s*(?:"([^"]*)"|'([^']*)')/gy;
+  const values = new Map();
+  let offset = 0;
+  while (offset < attributes.length) {
+    const match = pair.exec(attributes);
+    if (!match) return null;
+    const key = match[1].toLowerCase();
+    if (values.has(key)) return null;
+    values.set(key, match[2] ?? match[3]);
+    offset = pair.lastIndex;
+  }
+  if (!values.get("href")) return null;
+  values.delete("add_date");
+  values.delete("last_modified");
+  return JSON.stringify([title, [...values].sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0)]);
+}
+
+function clean(html) {
+  const lines = html.match(/[^\r\n]*(?:\r\n|\n|\r)|[^\r\n]+$/g) || [];
+  const unsupported = () => { throw new Error("Choose a standard line-based Netscape bookmark HTML export."); };
+  if (!/^\s*<!DOCTYPE NETSCAPE-Bookmark-file-1>\s*$/i.test(lines[0] || "")) unsupported();
+  const folders = [];
+  const samples = [];
+  let folderName = "", sawRoot = false, comment = false, total = 0, removed = 0;
+  for (let i = 1; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+    if (comment) { if (line.endsWith("-->")) comment = false; continue; }
+    if (line.startsWith("<!--")) { comment = !line.endsWith("-->"); continue; }
+    if (/^<DL>(?:<p>)?$/i.test(line)) {
+      if (!folders.length && sawRoot) unsupported();
+      sawRoot = true;
+      folders.push({ name: folderName, seen: new Set() });
+      folderName = "";
+      continue;
+    }
+    if (/^<\/DL>(?:<p>)?$/i.test(line)) {
+      if (!folders.length) unsupported();
+      folders.pop();
+      continue;
+    }
+    if (!sawRoot && /^(?:<META\b[^>]*>|<TITLE>[^<>]*<\/TITLE>|<H1\b[^>]*>[^<>]*<\/H1>)$/i.test(line)) continue;
+    if (!folders.length) unsupported();
+    const heading = line.match(/^<DT>\s*<H3\b[^>]*>([^<>]*)<\/H3>$/i);
+    if (heading) { folderName = label(heading[1]); continue; }
+    if (/^(?:<DD>[^<>]*|(?:<DT>\s*)?<HR\b[^>]*>)$/i.test(line)) continue;
+    const entry = line.match(/^<DT>\s*<A(\s+[^<>]+)>([^<>]*)<\/A>$/i);
+    if (!entry) unsupported();
+    total++;
+    let next = i + 1;
+    while (next < lines.length && !lines[next].trim()) next++;
+    if (/^(?:<DD>|<!--)/i.test((lines[next] || "").trim())) continue;
+    const key = bookmarkKey(entry[1].trimEnd(), entry[2]);
+    if (key === null) continue;
+    const folder = folders[folders.length - 1];
+    if (folder.seen.has(key)) {
+      removed++;
+      lines[i] = "";
+      if (samples.length < 12) {
+        const path = folders.map(f => f.name).filter(Boolean).join(" / ") || "Top level";
+        samples.push(path + " — " + (label(entry[2]) || "(untitled)"));
+      }
+    } else {
+      folder.seen.add(key);
+    }
+  }
+  if (!sawRoot || folders.length || comment) unsupported();
+  return { html: lines.join(""), total, removed, samples };
+}
+
+source.onchange = async () => {
+  const version = ++request;
+  const file = source.files[0];
+  ready = null;
+  preview.hidden = true;
+  list.replaceChildren();
+  statusLine.textContent = "";
+  if (!file) return;
+  try {
+    if (file.size > 32 * 1024 * 1024) throw new Error("Choose an export of 32 MiB or less.");
+    const bytes = await file.arrayBuffer();
+    if (version !== request) return;
+    let html;
+    try { html = new TextDecoder("utf-8", {fatal:true, ignoreBOM:true}).decode(bytes); }
+    catch { throw new Error("This file is not UTF-8. Export the bookmarks as UTF-8 HTML."); }
+    const result = clean(html);
+    const noun = result.total === 1 ? " bookmark" : " bookmarks";
+    const copies = result.removed === 1 ? " duplicate copy" : " duplicate copies";
+    statusLine.textContent = result.total + noun + " checked. " + result.removed + copies + " found.";
+    if (!result.removed) return;
+    for (const sample of result.samples) {
+      const item = document.createElement("li");
+      item.textContent = sample;
+      list.append(item);
+    }
+    if (result.removed > result.samples.length) {
+      const more = document.createElement("li");
+      more.textContent = (result.removed - result.samples.length) + " additional copies";
+      list.append(more);
+    }
+    ready = {html: result.html, name: file.name.replace(/\.html?$/i,"") + "-cleaned.html"};
+    preview.hidden = false;
+  } catch (error) {
+    if (version === request) statusLine.textContent = error.message;
+  }
+};
+save.onclick = () => {
+  if (!ready) return;
+  const url = URL.createObjectURL(new Blob([ready.html], {type:"text/html;charset=utf-8"}));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = ready.name;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 30000);
+};
+</script>
+</html>
