@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CSV Encoding Desk</title>
+<style>
+:root { color-scheme: light; font: 17px/1.55 "DM Sans", system-ui, sans-serif; color: #182f2b; background: #f2f2e9 }
+* { box-sizing: border-box }
+body { margin: 0; min-height: 100vh; display: grid; align-items: center; padding: 6vw }
+main { width: min(100%, 40rem); margin: auto }
+h1 { font: 500 clamp(2.8rem, 8vw, 4.7rem)/1.04 "Instrument Serif", Georgia, serif; letter-spacing: -.045em; margin: 0 }
+p { margin: .9rem 0 1.4rem }
+form { background: #fffef8; border: 1px solid #a7b8af; padding: clamp(1rem, 4vw, 2rem); border-radius: 12px }
+label { display: block; font-weight: 650; margin: 0 0 .45rem }
+input, select, button { font: inherit; max-width: 100% }
+input, select { margin-bottom: 1.4rem; width: 100% }
+select { background: white; color: inherit; border: 1px solid #7c9087; padding: .6rem; border-radius: 5px }
+button { border: 0; padding: .65rem 1.1rem; border-radius: 5px; background: #125843; color: white; cursor: pointer }
+button:disabled { opacity: .65 }
+output { display: block; margin-top: .8rem; overflow-wrap: anywhere }
+output:empty { margin: 0 }
+small { display: block; margin-top: 1rem; color: #435951 }
+</style>
+<main>
+<h1>CSV Encoding Desk</h1>
+<p>Prepare a UTF-8 CSV for Excel or remove the invisible marker from its first column. Your file stays on this device.</p>
+<form id="desk">
+<label for="csv">CSV file</label>
+<input id="csv" type="file" accept=".csv,text/csv" required>
+<label for="mode">Prepare a copy for</label>
+<select id="mode"><option value="excel">Excel · include UTF-8 marker</option><option value="import">Data import · remove UTF-8 marker</option></select>
+<button>Save a copy</button>
+<output id="status" role="status"></output>
+</form>
+<small>Supports UTF-8 files up to 32 MiB. Cell contents, separators and line endings stay intact.</small>
+</main>
+<script>
+const form = document.querySelector("form");
+const fileInput = document.querySelector("#csv");
+const mode = document.querySelector("#mode");
+const statusText = document.querySelector("output");
+const signature = new Uint8Array([0xef, 0xbb, 0xbf]);
+form.onchange = () => { statusText.textContent = ""; };
+form.onsubmit = async event => {
+  event.preventDefault();
+  const file = fileInput.files[0];
+  const target = mode.value;
+  const button = form.querySelector("button");
+  button.disabled = true;
+  try {
+    if (file.size > 32 * 1024 * 1024) throw new Error("Choose a file of 32 MiB or less.");
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    if (bytes.includes(0)) throw new Error("This file contains null bytes. Export it as UTF-8 CSV and try again.");
+    try {
+      new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+    } catch {
+      throw new Error("This file is not valid UTF-8. Export it as UTF-8 CSV and try again.");
+    }
+    const marked = signature.every((value, i) => bytes[i] === value);
+    if (marked && signature.every((value, i) => bytes[i + 3] === value))
+      throw new Error("Multiple leading UTF-8 markers found. Check the first column before converting.");
+    const body = marked ? bytes.subarray(3) : bytes;
+    const parts = target === "excel" ? [signature, body] : [body];
+    const url = URL.createObjectURL(new Blob(parts, { type: "text/csv;charset=utf-8" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = file.name.replace(/\.csv$/i, "") + "-" + target + ".csv";
+    document.body.append(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 30000);
+    statusText.textContent = "Prepared " + link.download + ".";
+  } catch (error) {
+    statusText.textContent = error.message;
+  } finally {
+    button.disabled = false;
+  }
+};
+</script>
+</html>

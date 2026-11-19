@@ -1,0 +1,24 @@
+name: Publish research lab downloads
+on:
+  push:
+    branches: [research-lab]
+    paths:
+      - 'lab/projects/**/release.json'
+      - 'lab/publish.py'
+      - '.github/workflows/research-lab-release.yml'
+permissions:
+  contents: write
+concurrency:
+  group: research-lab-release
+  cancel-in-progress: false
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - run: python3 lab/publish.py
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
