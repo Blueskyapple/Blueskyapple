@@ -13,3 +13,5 @@ Excel's text import flow also handles encoding selection. An offline utility is 
 ## Verification
 
 With Python, Playwright and Chromium installed, run `python test_browser.py` from this directory. The test drives the form offline, reads the downloaded bytes, and exercises encoding and size errors. Compatibility with Excel is based on the documented file format. The test runs in Chromium.
+
+Launch verification passed eight offline file conversions, four invalid or oversized inputs, and a successful retry after an error. The published HTML matched the tested file by SHA-256.

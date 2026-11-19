@@ -4,7 +4,7 @@ Small tools built from recurring problems reported on the public web. Each proje
 
 | Submission | What it does | Files |
 | --- | --- | --- |
-| 2026-11-19 · CSV Encoding Desk | Prepares UTF-8 CSVs for Excel or cleans an invisible marker from an import header, offline. | [Project and tests](projects/2026-11-19-csv-encoding/) · [Download source HTML](https://github.com/Blueskyapple/Blueskyapple/raw/refs/heads/research-lab/lab/projects/2026-11-19-csv-encoding/csv-encoding.html) |
+| 2026-11-19 · CSV Encoding Desk | Prepares UTF-8 CSVs for Excel or cleans an invisible marker from an import header, offline. | [Project and tests](projects/2026-11-19-csv-encoding/) · [Download CSV Encoding Desk](https://github.com/Blueskyapple/Blueskyapple/releases/download/lab-2026-11-19-csv-encoding/csv-encoding.html) |
 
 ## Daily mission
 
