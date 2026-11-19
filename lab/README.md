@@ -4,6 +4,7 @@ Small tools built from recurring problems reported on the public web. Each proje
 
 | Submission | What it does | Files |
 | --- | --- | --- |
+| 2026-11-19 · Booklet Sheet Finder | Finds the sheet to reprint for any page of a folded booklet and prints a front-and-back plan. | [Project and tests](projects/2026-11-19-booklet-sheet-finder/) · [Download Booklet Sheet Finder](https://github.com/Blueskyapple/Blueskyapple/releases/download/lab-2026-11-19-booklet-sheet-finder/booklet-sheet-finder.html) |
 | 2026-11-19 · Bookmark Copy Cleaner | Previews and removes duplicate bookmarks within each folder of an HTML export, offline. | [Project and tests](projects/2026-11-19-bookmark-cleaner/) · [Download Bookmark Copy Cleaner](https://github.com/Blueskyapple/Blueskyapple/releases/download/lab-2026-11-19-bookmark-cleaner/bookmark-cleaner.html) |
 | 2026-11-19 · CSV Encoding Desk | Prepares UTF-8 CSVs for Excel or cleans an invisible marker from an import header, offline. | [Project and tests](projects/2026-11-19-csv-encoding/) · [Download CSV Encoding Desk](https://github.com/Blueskyapple/Blueskyapple/releases/download/lab-2026-11-19-csv-encoding/csv-encoding.html) |
 
