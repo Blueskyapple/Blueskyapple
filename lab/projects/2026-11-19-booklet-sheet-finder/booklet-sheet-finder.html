@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Booklet Sheet Finder</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#f6f2e9;color:#292d29;font:16px/1.5 "DM Sans",system-ui,sans-serif}
+main{max-width:48rem;margin:6vh auto;padding:1.25rem}
+h1{font:500 clamp(2.5rem,7vw,4rem)/1.1 Georgia,serif;letter-spacing:-.04em;margin:0}
+form{display:flex;flex-wrap:wrap;gap:1rem;padding:1rem 0;border-block:1px solid #a8ab9b}
+label{font-weight:650;flex:1 1 10rem}
+input,select,button{font:inherit}
+input,select{display:block;width:100%;background:white;color:inherit;border:1px solid #7a8272;padding:.5rem;margin-top:.3rem;border-radius:.3rem}
+button{background:#245446;color:white;border:0;border-radius:.3rem;padding:.6rem 1rem;cursor:pointer}
+table{width:100%;border-collapse:collapse;background:white;margin:1rem 0;text-align:center;font-variant-numeric:tabular-nums}
+caption{text-align:left;font-weight:bold;margin-bottom:.4rem}
+th,td{padding:.45rem .25rem;border:1px solid #c8cbbd}
+thead{background:#e6ebe3} td.hit{outline:2px solid #245446;outline-offset:-3px;font-weight:800}
+output{display:block;font-weight:650;margin-top:1rem}
+@media print{body{background:white;color:black}main{margin:0;max-width:none;padding:0}form,button,.intro{display:none}thead{display:table-header-group}tr{break-inside:avoid}h1{font-size:20pt}}
+</style>
+<main>
+<h1>Booklet Sheet Finder</h1>
+<p class="intro">Plan a folded booklet or find one sheet to reprint. Count every page of your document, including covers.</p>
+<form onsubmit="return false">
+<label>Document pages<input id="pages" type="number" min="1" max="256" step="1" value="16" required></label>
+<label>Binding edge<select id="binding"><option value="left">Left</option><option value="right">Right</option></select></label>
+<label>Find page (optional)<input id="find" type="number" min="1" step="1" placeholder="Page number"></label>
+</form>
+<output id="message" aria-live="polite"></output>
+<section id="plan">
+<p id="summary"></p>
+<table><caption>Sheet order, outside to center</caption>
+<thead><tr><th rowspan="2" scope="col">Sheet</th><th colspan="2" scope="colgroup">Front</th><th colspan="2" scope="colgroup">Back</th></tr><tr><th scope="col">Left</th><th scope="col">Right</th><th scope="col">Left</th><th scope="col">Right</th></tr></thead>
+<tbody></tbody></table>
+<p>Nest the sheets in order and fold them together once. Left and right are as viewed facing each printed side. For a reprint, select the indicated sheet in your software’s booklet-printing settings.</p>
+<button type="button" id="print">Print this plan</button>
+</section>
+</main>
+<script>
+const pages = document.querySelector("#pages");
+const find = document.querySelector("#find");
+const binding = document.querySelector("#binding");
+const message = document.querySelector("#message");
+const plan = document.querySelector("#plan");
+const body = document.querySelector("tbody");
+function render() {
+  const count = pages.valueAsNumber;
+  find.max = String(count);
+  plan.hidden = !pages.validity.valid || !find.validity.valid;
+  message.textContent = "";
+  body.replaceChildren();
+  if (plan.hidden) {
+    message.textContent = !pages.validity.valid ? "Enter a whole page count from 1 to 256." : "Choose a page from 1 to " + count + ".";
+    return;
+  }
+  const sheets = Math.ceil(count / 4);
+  const padded = 4 * sheets;
+  const blanks = padded - count;
+  const target = find.valueAsNumber;
+  const rightBound = binding.value === "right";
+  document.querySelector("#summary").textContent = count + (count === 1 ? " page" : " pages") + " · " +
+    sheets + (sheets === 1 ? " sheet" : " sheets") + " · " + blanks +
+    (blanks === 1 ? " trailing blank" : " trailing blanks") + " · " + (rightBound ? "Right" : "Left") + " binding";
+  const positions = ["front left", "front right", "back left", "back right"];
+  for (let i = 0; i < sheets; i++) {
+    const low = 2 * i + 1;
+    const high = padded - 2 * i;
+    const layout = rightBound ? [low, high, high - 1, low + 1] : [high, low, low + 1, high - 1];
+    const row = body.insertRow();
+    const heading = document.createElement("th");
+    heading.scope = "row";
+    heading.textContent = i + 1;
+    row.append(heading);
+    layout.forEach((n, slot) => {
+      const cell = row.insertCell();
+      cell.textContent = n <= count ? n : "Blank";
+      if (n === target) {
+        cell.className = "hit";
+        message.textContent = "Page " + n + " is on sheet " + (i + 1) + ", " + positions[slot] + ".";
+      }
+    });
+  }
+}
+document.querySelector("form").addEventListener("input", render);
+document.querySelector("#print").onclick = () => window.print();
+render();
+</script>
+</html>
