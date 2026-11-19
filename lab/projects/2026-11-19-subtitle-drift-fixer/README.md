@@ -1,11 +1,11 @@
 # Subtitle Drift Fixer
 
-Fix a constant delay or gradual timing drift in a UTF-8 SRT subtitle track. The download is one HTML file that runs offline in a browser. Keep the video open in your usual player.
+Fix a constant delay or gradual timing drift in a UTF-8 SRT subtitle track. The download is one HTML file that runs offline in a browser. Use the built-in local player or enter times from your usual player.
 
 1. Open `subtitle-drift-fixer.html` and choose your SRT.
-2. Pick an early subtitle line. Enter the video time when its speech starts, using hours, minutes, seconds and milliseconds.
+2. Pick an early subtitle line. Open a local video, pause on the first spoken word, and click **Use player time for first line**. You can also type a time.
 3. For gradual drift, repeat with a line near the end. For a uniform delay, select **Constant delay** and use a single match.
-4. Select **Save corrected SRT**, load the new track in your player, and check a line near the middle.
+4. Select **Preview corrected captions** and play a line midway through the local video. Adjust a match if needed, then select **Save corrected SRT**. Playback supports the media formats your browser can decode.
 
 ## Example
 
@@ -21,6 +21,6 @@ Multiple viewers report subtitles that gradually slip out of sync after adjustin
 
 ## Verification
 
-Four offline Chromium tests passed. The saved file matched expected bytes for multilingual, multiline captions, and FFmpeg's ffprobe read the expected start and duration for all three corrected cues. Tests also covered a one-line delay, an unchanged round trip, invalid anchors, invalid files, the size limit and recovery. The test used known timings. Timing accuracy on a particular recording depends on the spoken times entered.
+Six offline Chromium tests passed. In the media workflow, a generated WebM clip provided both timing matches. Chromium displayed the corrected multiline midpoint caption, the downloaded SRT contained its expected interval, and an unsupported media file left manual export available. The saved file matched expected bytes for multilingual, multiline captions, and FFmpeg's ffprobe read the expected start and duration for all three corrected cues. Tests also covered a one-line delay, an unchanged round trip, invalid anchors, invalid files, the size limit and recovery. The test used known timings. Timing accuracy on a particular recording depends on the spoken times entered.
 
-Run `python test_browser.py` with Python, Playwright, Chromium and ffprobe installed.
+Run `python test_browser.py` with Python, Playwright, Chromium, ffmpeg and ffprobe installed.

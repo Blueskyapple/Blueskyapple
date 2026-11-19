@@ -9,7 +9,7 @@ main{max-width:48rem;margin:7vh auto;padding:1.3rem}h1{font:500 clamp(2.8rem,8vw
 label{display:block;font-weight:650;margin:.85rem 0}select,input,button{font:inherit;max-width:100%}
 input,select{display:block;margin-top:.25rem;width:100%;padding:.4rem}fieldset{margin:1.1rem 0;border:1px solid #85958e;background:#fffdf8;border-radius:.4rem}legend{font-weight:bold}
 button{background:#184f49;color:white;border:none;border-radius:.35rem;padding:.65rem 1rem;cursor:pointer}
-output{display:block;margin-top:.8rem}small{color:#4c5c56}
+video{width:100%;max-height:48vh;background:#171b1d}button:disabled{opacity:.55;cursor:default}fieldset button{margin-bottom:.6rem}output{display:block;margin-top:.8rem}small{color:#4c5c56}
 </style>
 <main>
 <h1>Subtitle Drift Fixer</h1>
@@ -17,9 +17,13 @@ output{display:block;margin-top:.8rem}small{color:#4c5c56}
 <label>UTF-8 subtitle file<input id="file" type="file" accept=".srt"></label>
 <small>Numbered SRT files up to 4 MiB and 5,000 cues.</small>
 <form hidden>
+<label>Local video (optional)<input id="media" type="file" accept="video/*,audio/*"></label>
+<video id="player" controls preload="metadata" hidden></video>
+<p id="mediaNote" aria-live="polite"></p>
 <label>Timing correction<select id="mode"><option value="two">Gradual drift · two lines</option><option value="one">Constant delay · one line</option></select></label>
-<fieldset><legend>First match</legend><label>First subtitle line<select id="first"></select></label><label>First spoken time<input id="start" required placeholder="00:00:12.500"></label></fieldset>
-<fieldset id="secondGroup"><legend>Second match</legend><label>Later subtitle line<select id="last"></select></label><label>Later spoken time<input id="end" placeholder="00:24:30.000"></label></fieldset>
+<fieldset><legend>First match</legend><label>First subtitle line<select id="first"></select></label><label>First spoken time<input id="start" required placeholder="00:00:12.500"></label><button type="button" id="captureStart" hidden>Use player time for first line</button></fieldset>
+<fieldset id="secondGroup"><legend>Second match</legend><label>Later subtitle line<select id="last"></select></label><label>Later spoken time<input id="end" placeholder="00:24:30.000"></label><button type="button" id="captureEnd" hidden>Use player time for later line</button></fieldset>
+<button type="button" id="preview" hidden>Preview corrected captions</button>
 <button>Save corrected SRT</button>
 </form>
 <output role="status"></output>
@@ -53,7 +57,8 @@ function parse(text) {
       throw new Error("Expected a numbered SRT cue with timing and text at line " + line + ".");
     const start = ms(time[2]), end = ms(time[4]);
     if (end <= start) throw new Error("Cue " + number + " must end after it starts.");
-    cues.push({index:i+2, start, end, time, number, label: number + " · " + time[2] + " · " + parts[i+4].slice(0,75)});
+    const cue = {index:i+2, start, end, time, number, label: number + " · " + time[2] + " · " + parts[i+4].slice(0,75)};
+    cues.push(cue);
     if (cues.length > 5000) throw new Error("Choose an SRT with up to 5,000 cues.");
     i += 4;
     while (i < parts.length && parts[i].trim()) {
@@ -61,6 +66,7 @@ function parse(text) {
         throw new Error("A blank line is missing before cue " + parts[i].trim() + ".");
       i += 2;
     }
+    cue.text = parts.slice(cue.index+2,i-1).join("");
   }
   if (!cues.length) throw new Error("The file contains no subtitle cues.");
   return {parts,cues};
@@ -70,9 +76,61 @@ function showMode() { byId("secondGroup").hidden = byId("mode").value === "one";
 byId("first").onchange = () => setTime("first","start");
 byId("last").onchange = () => setTime("last","end");
 byId("mode").onchange = showMode;
-form.oninput = () => {statusLine.textContent = "";};
+const player = byId("player");
+const track = player.addTextTrack("subtitles", "Corrected captions");
+let mediaUrl;
+function clearPreview() {
+  if (track.cues) {
+    for (const old of Array.from(track.cues)) track.removeCue(old);
+  }
+  track.mode = "disabled";
+}
+function enablePlayerControls(ready) {
+  for (const id of ["captureStart","captureEnd","preview"]) byId(id).hidden = !ready;
+}
+function resetPlayer() {
+  clearPreview();
+  enablePlayerControls(false);
+  player.pause();
+  player.removeAttribute("src");
+  player.load();
+  player.hidden = true;
+  if (mediaUrl) URL.revokeObjectURL(mediaUrl);
+  mediaUrl = null;
+  byId("mediaNote").textContent = "";
+}
+byId("media").onchange = event => {
+  resetPlayer();
+  const file = event.target.files[0];
+  if (!file) return;
+  mediaUrl = URL.createObjectURL(file);
+  player.src = mediaUrl;
+  player.hidden = false;
+};
+player.onloadedmetadata = () => {
+  if (player.currentSrc !== mediaUrl) return;
+  enablePlayerControls(true);
+  byId("mediaNote").textContent = "Pause on a spoken line, then use the player time for its match.";
+};
+player.onerror = () => {
+  if (!mediaUrl || player.currentSrc !== mediaUrl) return;
+  enablePlayerControls(false);
+  clearPreview();
+  byId("mediaNote").textContent = "Your browser could not play this file. You can enter times from another player.";
+};
+function capture(input) {
+  player.pause();
+  byId(input).value = stamp(Math.round(player.currentTime*1000)).replace(",",".");
+  clearPreview();
+  statusLine.textContent = "Captured " + byId(input).value + ".";
+}
+byId("captureStart").onclick = () => capture("start");
+byId("captureEnd").onclick = () => capture("end");
+form.oninput = () => {clearPreview(); statusLine.textContent = "";};
 byId("file").onchange = async event => {
   const version = ++revision;
+  resetPlayer();
+  byId("media").value = "";
   current = null;
   form.hidden = true;
   statusLine.textContent = "";
@@ -101,26 +159,41 @@ byId("file").onchange = async event => {
     statusLine.textContent = current.cues.length + " cues loaded.";
   } catch (error) { if (version===revision) statusLine.textContent = error.message; }
 };
+function correctedCues() {
+  const original = current.cues[Number(byId("first").value)].start;
+  const wanted = ms(byId("start").value);
+  let rate = 1;
+  if (byId("mode").value==="two") {
+    const later = current.cues[Number(byId("last").value)].start;
+    const desiredLater = ms(byId("end").value);
+    if (later <= original || desiredLater <= wanted) throw new Error("Choose two lines and spoken times in increasing order.");
+    rate = (desiredLater-wanted)/(later-original);
+  }
+  const convert = t => Math.round(wanted+(t-original)*rate);
+  return current.cues.map(cue => {
+    const from = convert(cue.start), to = convert(cue.end);
+    if (from < 0 || to >= 360000000 || to <= from)
+      throw new Error("The correction puts cue " + cue.number + " outside the time range or makes it too short. Check the matches.");
+    return {cue,from,to};
+  });
+}
+byId("preview").onclick = () => {
+  try {
+    const corrected = correctedCues();
+    clearPreview();
+    track.mode = "hidden";
+    for (const {cue,from,to} of corrected)
+      track.addCue(new VTTCue(from/1000,to/1000,cue.text));
+    track.mode = "showing";
+    statusLine.textContent = "Preview ready. Play a line midway through the video to check the fit.";
+  } catch (error) { clearPreview(); statusLine.textContent = error.message; }
+};
 form.onsubmit = event => {
   event.preventDefault();
   try {
-    const original = current.cues[Number(byId("first").value)].start;
-    const wanted = ms(byId("start").value);
-    let rate = 1;
-    if (byId("mode").value==="two") {
-      const later = current.cues[Number(byId("last").value)].start;
-      const desiredLater = ms(byId("end").value);
-      if (later <= original || desiredLater <= wanted) throw new Error("Choose two lines and spoken times in increasing order.");
-      rate = (desiredLater-wanted)/(later-original);
-    }
     const parts = current.parts.slice();
-    const convert = t => Math.round(wanted+(t-original)*rate);
-    for (const cue of current.cues) {
-      const from = convert(cue.start), to = convert(cue.end);
-      if (from < 0 || to >= 360000000 || to <= from)
-        throw new Error("The correction puts cue " + cue.number + " outside the time range or makes it too short. Check the matches.");
+    for (const {cue,from,to} of correctedCues())
       parts[cue.index] = cue.time[1]+stamp(from)+cue.time[3]+stamp(to)+cue.time[5];
-    }
     const url = URL.createObjectURL(new Blob([current.bom ? "\uFEFF" : "",parts.join("")],{type:"application/x-subrip"}));
     const link = document.createElement("a");
     link.href=url; link.download=current.name; document.body.append(link); link.click(); link.remove();

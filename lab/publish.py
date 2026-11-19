@@ -17,6 +17,9 @@ def main():
         metadata = json.loads(manifest.read_text())
         folder = manifest.parent
         tag = "lab-" + folder.name
+        version = metadata.get("version", 1)
+        if version > 1:
+            tag += f"-v{version}"
         asset = folder / metadata["asset"]
         if asset.parent != folder or not asset.is_file():
             raise ValueError(f"Missing distribution file in {folder}")
@@ -26,8 +29,9 @@ def main():
                 raise ValueError(f"Published release {tag} is missing {asset.name}")
             continue
         if not release:
+            title = metadata["title"] if version == 1 else f"{metadata['title']} v{version}"
             gh("release", "create", tag, "--draft", "--target", os.environ["GITHUB_SHA"],
-               "--title", metadata["title"], "--notes-file", str(folder / "README.md"))
+               "--title", title, "--notes-file", str(folder / "README.md"))
         gh("release", "upload", tag, str(asset), "--clobber")
         gh("release", "edit", tag, "--draft=false", "--latest=false")
 

@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 from shutil import which
 import subprocess
+from tempfile import TemporaryDirectory
 import unittest
 
 from playwright.sync_api import sync_playwright
@@ -80,6 +81,36 @@ class DriftFixer(unittest.TestCase):
         self.status.filter(has_text='outside the time range').wait_for()
         self.page.get_by_label('First spoken time').fill('00:05:10.000')
         self.assertEqual(self.download().read_bytes(), subtitles(ORIGINAL))
+
+    def test_local_video_capture_preview_and_export(self):
+        srt = b"1\n00:00:01,000 --> 00:00:02,000\nEarly\n\n2\n00:00:03,000 --> 00:00:04,000\nMiddle\nline\n\n3\n00:00:05,000 --> 00:00:06,000\nLate"
+        self.select(srt)
+        with TemporaryDirectory() as tmp:
+            clip = Path(tmp) / "clip.webm"
+            subprocess.run(["ffmpeg","-v","error","-f","lavfi","-i","color=s=64x64:r=8",
+                            "-t","9","-c:v","libvpx",str(clip)], check=True)
+            self.page.get_by_label("Local video").set_input_files(clip)
+            for button, seconds in [("first",2),("later",7)]:
+                self.page.get_by_role("button", name=f"Use player time for {button} line").wait_for()
+                self.page.locator("video").evaluate(
+                    "(v,t) => new Promise(resolve => {v.addEventListener('seeked', resolve, {once:true}); v.currentTime=t})", seconds)
+                self.page.get_by_role("button", name=f"Use player time for {button} line").click()
+            self.page.get_by_role("button", name="Preview corrected captions").click()
+            self.page.locator("video").evaluate(
+                "v => new Promise(resolve => {v.addEventListener('seeked', resolve, {once:true}); v.currentTime=4.6})")
+            self.page.wait_for_function("document.querySelector('video').textTracks[0].activeCues?.[0]?.text === 'Middle\\nline'")
+            downloaded = self.download().read_bytes()
+            self.assertIn(b"00:00:04,500 --> 00:00:05,750", downloaded)
+            self.page.get_by_label("First spoken time").fill("00:00:01.900")
+            self.assertEqual(self.page.locator("video").evaluate("v => v.textTracks[0].mode"), "disabled")
+
+    def test_unplayable_media_keeps_manual_export(self):
+        original = subtitles(ORIGINAL)
+        self.select(original)
+        self.page.get_by_label("Local video").set_input_files(
+            {"name":"bad.webm","mimeType":"video/webm","buffer":b"broken"})
+        self.page.get_by_text("Your browser could not play", exact=False).wait_for()
+        self.assertEqual(self.download().read_bytes(), original)
 
     def test_invalid_files_clear_form(self):
         self.select(subtitles(ORIGINAL))
