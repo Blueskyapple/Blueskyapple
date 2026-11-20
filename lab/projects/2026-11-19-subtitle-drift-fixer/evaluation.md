@@ -36,3 +36,9 @@ Record the v1 and v2 GitHub asset IDs, cumulative counts, observation times, and
 The primary outcome is new downloads of v2 since cutover. A secondary outcome is the change in combined v1 and v2 downloads. The old link stays public, while the catalog directs new readers to v2. A download can include a repeat, and the lab has no exposure denominator. The comparison is observational. It cannot establish whether the change caused growth or whether a downloader successfully synchronized a track.
 
 At day 30, sustained new downloads across both the first week and the remaining period will support continued distribution. If downloads stall, look for evidence of discovery problems before expanding the editor. For direct evidence of user value, look for project-specific reports of a successful middle-cue check or a concrete failure. Record the absence of feedback as unknown.
+
+## Cutover and scheduled checkpoints
+
+The original release was public for 6 minutes 20 seconds before v2 shipped. At 3:59:35 p.m. Pacific on November 19, GitHub counted 0 downloads for each subtitle version. Bookmark Copy Cleaner had 3, CSV Encoding Desk had 1 and Booklet Sheet Finder had 1. The public issue tracker returned no subtitle-specific feedback at this check. The catalog now points to the verified v2 asset. [Cutover counts and asset IDs](observations/cutover.csv)
+
+Daily observations are scheduled for approximately 6 p.m. Pacific, November 20 through December 19. Checkpoint reports are due November 20, November 26 and December 19. Each stores the observed counts separately from the daily lab catalog snapshot. [Dated observations](observations/)
