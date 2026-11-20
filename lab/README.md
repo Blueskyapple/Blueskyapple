@@ -4,6 +4,7 @@ Small tools built from recurring problems reported on the public web. Each proje
 
 | Submission | What it does | Files |
 | --- | --- | --- |
+| 2026-11-20 · Merge CSV Files by Header | Combines CSVs with reordered or missing columns and previews each file’s mapping. | [Project and tests](projects/2026-11-20-csv-header-merger/) · [Download CSV merger](https://github.com/Blueskyapple/Blueskyapple/releases/download/lab-2026-11-20-csv-header-merger/merge-csv-by-header.html) |
 | 2026-11-19 · Subtitle Drift Fixer | Corrects a constant delay or gradual drift in an SRT using local video timing capture and corrected-caption preview. | [Project and tests](projects/2026-11-19-subtitle-drift-fixer/) · [Download Subtitle Drift Fixer v2](https://github.com/Blueskyapple/Blueskyapple/releases/download/lab-2026-11-19-subtitle-drift-fixer-v2/subtitle-drift-fixer.html) |
 | 2026-11-19 · Booklet Sheet Finder | Finds the sheet to reprint for any page of a folded booklet and prints a front-and-back plan. | [Project and tests](projects/2026-11-19-booklet-sheet-finder/) · [Download Booklet Sheet Finder](https://github.com/Blueskyapple/Blueskyapple/releases/download/lab-2026-11-19-booklet-sheet-finder/booklet-sheet-finder.html) |
 | 2026-11-19 · Bookmark Copy Cleaner | Previews and removes duplicate bookmarks within each folder of an HTML export, offline. | [Project and tests](projects/2026-11-19-bookmark-cleaner/) · [Download Bookmark Copy Cleaner](https://github.com/Blueskyapple/Blueskyapple/releases/download/lab-2026-11-19-bookmark-cleaner/bookmark-cleaner.html) |
