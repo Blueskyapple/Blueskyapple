@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Merge CSV Files by Header</title>
+<style>
+* { box-sizing:border-box }
+body { margin:0;background:#f2f4ed;color:#21352d;font:16px/1.55 "DM Sans",system-ui,sans-serif }
+main { max-width:52rem;margin:6vh auto;padding:1.25rem }
+h1 { font:500 clamp(2.6rem,7vw,4.5rem)/1.05 Georgia,serif;letter-spacing:-.045em;margin:0 }
+section { background:#fffef8;border:1px solid #b0bcad;border-radius:.6rem;padding:1.25rem }
+label { display:block;font-weight:650 } input,button { font:inherit;max-width:100% } input { margin:.5rem 0 }
+button { background:#215440;color:white;border:0;border-radius:.35rem;padding:.6rem 1rem;cursor:pointer }
+details { margin:1rem 0 } summary { cursor:pointer } .scroll { overflow:auto;max-height:18rem }
+table { border-collapse:collapse;width:100% } th,td { text-align:left;vertical-align:top;border-bottom:1px solid #cecfc7;padding:.4rem .5rem;overflow-wrap:anywhere }
+output { display:block;font-weight:600;margin-top:.75rem } small { color:#43594d }
+</style>
+<main>
+<h1>Merge CSV files by header</h1>
+<p>Combine rows from multiple exports, even when columns move or appear in only one file. Files are processed on this device.</p>
+<section>
+<label for="files">Choose two or more CSV files</label>
+<input id="files" type="file" accept=".csv,text/csv" multiple>
+<div><small>UTF-8, comma-separated, up to 16 MiB of input per batch.</small></div>
+<output id="status" role="status"></output>
+<div id="ready" hidden>
+<details><summary>Review file and column matches</summary><div class="scroll"><table>
+<thead><tr><th>File</th><th>Rows</th><th>Input headers in order</th><th>Empty output columns</th></tr></thead><tbody></tbody>
+</table></div></details>
+<button id="save" type="button">Download merged CSV</button>
+</div>
+</section>
+<p><small>Header names match exactly, including case and spaces. New columns appear in first-seen order. Missing values stay empty. When importing the result into a spreadsheet, set ID columns to text to retain leading zeros.</small></p>
+</main>
+<script>
+const files = document.querySelector("#files");
+const statusLine = document.querySelector("#status");
+const ready = document.querySelector("#ready");
+const body = document.querySelector("tbody");
+let selection = 0;
+let result = null;
+
+function parseCSV(text, consume) {
+  let row = [], field = "", quoted = false, closed = false, started = false;
+  let record = 1;
+  function finishField() {
+    if (row.length >= 1024) throw new Error("A record exceeds 1,024 columns.");
+    row.push(field);
+    field = ""; closed = false;
+  }
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (quoted) {
+      if (ch !== '"') field += ch;
+      else if (text[i+1] === '"') { field += '"'; i++; }
+      else { quoted = false; closed = true; }
+      continue;
+    }
+    if (ch === "\r" || ch === "\n") {
+      if (started) { finishField(); consume(row, record++); }
+      if (ch === "\r" && text[i+1] === "\n") i++;
+      row = []; field = ""; closed = false; started = false;
+      continue;
+    }
+    started = true;
+    if (ch === ",") { finishField(); continue; }
+    if (closed || (ch === '"' && field.length)) throw new Error("Unexpected character or quote in record " + record + ".");
+    if (ch === '"') quoted = true;
+    else field += ch;
+  }
+  if (quoted) throw new Error("Unclosed quote in record " + record + ".");
+  if (started) { finishField(); consume(row, record); }
+}
+function encode(value) {
+  return /[",\r\n]/.test(value) || value === "" ? '"' + value.replaceAll('"','""') + '"' : value;
+}
+async function prepare(batch, token) {
+  if (batch.length > 512) throw new Error("Choose up to 512 files per batch.");
+  if (batch.length < 2) throw new Error("Choose at least two files together.");
+  if (batch.reduce((n,f) => n+f.size,0) > 16*1024*1024) throw new Error("Choose a batch of 16 MiB or less.");
+  const tables = [], columns = new Map();
+  let rowCount = 0, cells = 0;
+  for (const file of batch) {
+    const bytes = await file.arrayBuffer();
+    if (selection !== token) return;
+    try {
+      let text;
+      try { text = new TextDecoder("utf-8",{fatal:true}).decode(bytes); }
+      catch { throw new Error("Export this file as UTF-8 and try again."); }
+      if (text.includes("\0")) throw new Error("Null bytes found. Export as UTF-8 CSV.");
+      let headers;
+      const rows = [];
+      parseCSV(text, (row, record) => {
+        cells += row.length;
+        if (cells > 1000000) throw new Error("Batch exceeds one million input cells.");
+        if (!headers) {
+          if (row.some(h => !h.trim()) || new Set(row).size !== row.length)
+            throw new Error("Column names must be unique and nonempty.");
+          headers = row;
+          for (const h of headers) if (!columns.has(h)) columns.set(h,columns.size);
+          if (columns.size > 1024) throw new Error("Combined headers exceed 1,024 columns.");
+        } else {
+          if (row.length !== headers.length)
+            throw new Error("Record " + record + " has " + row.length + " fields; expected " + headers.length + ".");
+          rows.push(row);
+          rowCount++;
+        }
+      });
+      if (!headers) throw new Error("No header row found.");
+      tables.push({file,headers,rows});
+    } catch (error) { throw new Error(file.name + " — " + error.message); }
+  }
+  if ((rowCount+1)*columns.size > 1000000) throw new Error("Merged table exceeds one million output cells. Split the batch.");
+  const names = [...columns.keys()];
+  const lines = [names.map(encode).join(",")];
+  const fragment = document.createDocumentFragment();
+  for (const table of tables) {
+    const indexes = new Map(table.headers.map((name,index) => [name,index]));
+    const order = names.map(name => indexes.get(name));
+    for (const row of table.rows)
+      lines.push(order.map(i => encode(i === undefined ? "" : row[i])).join(","));
+    const tr = document.createElement("tr");
+    for (const value of [table.file.name,table.rows.length,table.headers.join(" · "),names.filter(n => !indexes.has(n)).join(" · ") || "None"]) {
+      const td = document.createElement("td"); td.textContent = value; tr.append(td);
+    }
+    fragment.append(tr);
+  }
+  result = new Blob(["\uFEFF",lines.join("\r\n"),"\r\n"],{type:"text/csv;charset=utf-8"});
+  body.replaceChildren(fragment);
+  statusLine.textContent = batch.length + " files · " + rowCount + " data rows · " + names.length + " output columns";
+  ready.hidden = false;
+}
+files.onchange = async () => {
+  const token = ++selection;
+  result = null; ready.hidden = true; body.replaceChildren();
+  statusLine.textContent = "Reading files…";
+  try { await prepare(Array.from(files.files),token); }
+  catch (error) { if (token === selection) statusLine.textContent = error.message; }
+};
+document.querySelector("#save").onclick = () => {
+  if (!result) return;
+  const url = URL.createObjectURL(result);
+  const link = document.createElement("a");
+  link.href = url; link.download = "merged.csv"; document.body.append(link);
+  link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(url),30000);
+};
+</script>
+</html>
