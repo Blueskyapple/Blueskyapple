@@ -1,0 +1,6 @@
+observed_at,tag,asset_id,downloads,since_cutover,status
+2026-11-21T02:05:53+00:00,lab-2026-11-19-subtitle-drift-fixer-v2,769747006,1,1,observed
+2026-11-21T02:05:53+00:00,lab-2026-11-19-subtitle-drift-fixer,769732519,1,1,observed
+2026-11-21T02:05:53+00:00,lab-2026-11-19-booklet-sheet-finder,769535114,1,0,observed
+2026-11-21T02:05:53+00:00,lab-2026-11-19-bookmark-cleaner,767928817,3,0,observed
+2026-11-21T02:05:53+00:00,lab-2026-11-19-csv-encoding,767906777,1,0,observed

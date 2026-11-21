@@ -42,3 +42,9 @@ At day 30, sustained new downloads across both the first week and the remaining 
 The original release was public for 6 minutes 20 seconds before v2 shipped. At 3:59:35 p.m. Pacific on November 19, GitHub counted 0 downloads for each subtitle version. Bookmark Copy Cleaner had 3, CSV Encoding Desk had 1 and Booklet Sheet Finder had 1. The public issue tracker returned no subtitle-specific feedback at this check. The catalog now points to the verified v2 asset. [Cutover counts and asset IDs](observations/cutover.csv)
 
 Daily observations are scheduled for approximately 6 p.m. Pacific, November 20 through December 19. Checkpoint reports are due November 20, November 26 and December 19. Each stores the observed counts separately from the daily lab catalog snapshot. [Dated observations](observations/)
+
+## Day 1 checkpoint — November 20, 2026
+
+At 6:05:53 p.m. Pacific, 26 hours, 6 minutes and 18 seconds after the baseline, GitHub recorded one download each for v2 and v1. Both gained one since cutover, for two combined. This first checkpoint uses cutover as its comparison point. Both downloads were already present in the morning snapshot. Booklet Sheet Finder held at 1, Bookmark Copy Cleaner at 3 and CSV Encoding Desk at 1, each a change of zero. All five asset IDs matched the baseline. [Day 1 observation](observations/2026-11-20.csv) · [Morning snapshot](../../metrics/2026-11-20.csv)
+
+The public repository issue search returned no reports of successful alignment or a failed correction. With one download per version and different catalog exposure, the counts give no evidence yet that v2 increased adoption. Successful use remains unknown. [Repository issues](https://github.com/Blueskyapple/Blueskyapple/issues)
